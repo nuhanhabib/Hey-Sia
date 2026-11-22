@@ -18,6 +18,8 @@ import com.heysia.app.MainActivity
 import com.heysia.app.R
 import com.heysia.app.brain.Reply
 import com.heysia.app.brain.SiaBrain
+import com.heysia.app.listen.ListenSettings
+import com.heysia.app.listen.PhoneEars
 import com.heysia.app.listen.SiaEars
 import com.heysia.app.listen.SpeechModel
 import com.heysia.app.voice.Phrases
@@ -46,7 +48,9 @@ class SiaService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var voice: SiaVoice
     private lateinit var brain: SiaBrain
-    private val ears = SiaEars()
+    private val ears = SiaEars()            // wake word, and the fully offline fallback
+    private lateinit var phoneEars: PhoneEars // accurate command recognition
+    private lateinit var listenSettings: ListenSettings
     private var loop: Job? = null
     private var talkNowRequested = false
     private var inForeground = false
@@ -58,6 +62,8 @@ class SiaService : Service() {
         super.onCreate()
         voice = SiaVoice(this)
         brain = SiaBrain(this)
+        phoneEars = PhoneEars(this)
+        listenSettings = ListenSettings(this)
         createChannel()
     }
 
@@ -79,6 +85,7 @@ class SiaService : Service() {
     override fun onDestroy() {
         scope.cancel()
         ears.cancel()
+        phoneEars.stop()
         voice.shutdown()
         beeper.release()
         SiaState.setPhase(SiaState.Phase.Off)
@@ -90,6 +97,7 @@ class SiaService : Service() {
     private fun talkNow() {
         talkNowRequested = true
         ears.cancel() // ends waitForWakeWord(); the loop then sees the request
+        phoneEars.stop()
         voice.stop()
     }
 
@@ -102,6 +110,7 @@ class SiaService : Service() {
             return
         }
         scope.launch { ears.partial.collectLatest { SiaState.setPartial(it) } }
+        scope.launch { phoneEars.partial.collectLatest { SiaState.setPartial(it) } }
 
         while (scope.isActive) {
             SiaState.setPhase(SiaState.Phase.WaitingForWakeWord)
@@ -120,19 +129,25 @@ class SiaService : Service() {
         }
     }
 
-    /** One conversation: listen, act, reply, and keep going while Sia has asked a question. */
+    /** One conversation: answer, listen, act, reply, and keep going while Sia has asked a question. */
     private suspend fun converse() {
-        beep()
+        // Answer like a person, so you know she's ready before you speak.
+        SiaState.setPhase(SiaState.Phase.Speaking)
+        voice.speakAndWait(Phrases.wakeReply())
         var handler: suspend (String) -> Reply = brain::handle
+        var firstTurn = true
         repeat(MAX_TURNS) {
             SiaState.setPhase(SiaState.Phase.Listening)
-            when (val heard = ears.listen()) {
+            when (val heard = listenForCommand()) {
                 is SiaEars.Heard.Text -> {
-                    SiaState.add(fromUser = true, heard.text)
+                    // For a new command, pick the guess that makes sense. Answers to questions use the top guess.
+                    val text = if (firstTurn) withContext(Dispatchers.Default) { brain.pick(heard.alternatives) } else heard.text
+                    firstTurn = false
+                    SiaState.add(fromUser = true, text)
                     SiaState.setPhase(SiaState.Phase.Thinking)
                     val reply = try {
                         // Searching contacts or songs can take a moment: keep it off the main thread.
-                        withContext(Dispatchers.Default) { handler(heard.text) }
+                        withContext(Dispatchers.Default) { handler(text) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
@@ -148,6 +163,20 @@ class SiaService : Service() {
                 }
             }
         }
+    }
+
+    /**
+     * Uses the phone's speech recognition (accurate), falling back to Sia's own offline model if it's
+     * unavailable, e.g. offline without the offline English pack.
+     */
+    private suspend fun listenForCommand(): SiaEars.Heard {
+        if (listenSettings.engine == ListenSettings.Engine.Phone && phoneEars.isAvailable) {
+            val heard = phoneEars.listen(listenSettings.languageTag())
+            if (heard !is SiaEars.Heard.Failed) return heard
+            SiaState.setPhase(SiaState.Phase.Listening, "${heard.message} Using Sia's built-in model instead.")
+            beep()
+        }
+        return ears.listen()
     }
 
     private suspend fun say(text: String) {

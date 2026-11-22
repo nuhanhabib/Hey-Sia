@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.edit
 import com.heysia.app.service.SiaService
 import com.heysia.app.ui.HomeScreen
+import com.heysia.app.ui.ListeningScreen
 import com.heysia.app.ui.PrivateAppsScreen
 import com.heysia.app.ui.Setup
 import com.heysia.app.ui.SiaTheme
@@ -48,12 +49,14 @@ class MainActivity : ComponentActivity() {
                             onEnabledChange = ::setEnabled,
                             openScreen = ::openSafely,
                             extraButtons = {
+                                OutlinedButton(onClick = { page = Page.Listening }) { Text("Listening settings") }
                                 OutlinedButton(onClick = { page = Page.Voice }) { Text("Voice settings") }
                                 OutlinedButton(onClick = { page = Page.PrivateApps }) { Text("Private apps") }
                             }
                         )
                         Page.Voice -> VoiceTestScreen(voice = voice(), openScreen = ::openSafely, onRetry = ::recreate)
                         Page.PrivateApps -> PrivateAppsScreen()
+                        Page.Listening -> ListeningScreen(openScreen = ::openSafely)
                     }
                 }
             }
@@ -103,7 +106,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private enum class Page { Home, Voice, PrivateApps }
+    private enum class Page { Home, Voice, PrivateApps, Listening }
 
     companion object {
         const val ACTION_TALK = "com.heysia.app.action.TALK"

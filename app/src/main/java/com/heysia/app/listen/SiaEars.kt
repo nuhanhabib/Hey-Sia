@@ -27,7 +27,8 @@ import kotlin.coroutines.resume
 class SiaEars {
 
     sealed interface Heard {
-        data class Text(val text: String) : Heard
+        /** [alternatives]: other guesses of what you said, best first (includes [text]). */
+        data class Text(val text: String, val alternatives: List<String> = listOf(text)) : Heard
         data object Silence : Heard
         data class Failed(val message: String) : Heard
     }
@@ -36,6 +37,7 @@ class SiaEars {
     private var service: SpeechService? = null
     private var onHeard: ((Heard) -> Unit)? = null
     private var accept: (String) -> Boolean = { true }
+    private var acceptPartial = false
     private var sessionId = 0
 
     private val _partial = MutableStateFlow("")
@@ -46,17 +48,21 @@ class SiaEars {
 
     /** Listen for one full sentence. Returns when you pause, or [Heard.Silence] after [timeoutMs]. */
     suspend fun listen(timeoutMs: Int = COMMAND_TIMEOUT_MS): Heard =
-        session(grammar = null, timeoutMs = timeoutMs, accept = { it !in NOISE_WORDS })
+        session(grammar = null, timeoutMs = timeoutMs, accept = { it !in NOISE_WORDS }, partialCounts = false)
 
-    /** Wait (forever, until cancelled) until someone says "Hey Sia". */
+    /**
+     * Wait (forever, until cancelled) until someone says "Hey Sia".
+     * Reacts as soon as the words are heard, without waiting for you to pause.
+     */
     suspend fun waitForWakeWord(): Heard =
-        session(grammar = WAKE_GRAMMAR, timeoutMs = NO_TIMEOUT, accept = ::isWakePhrase)
+        session(grammar = WAKE_GRAMMAR, timeoutMs = NO_TIMEOUT, accept = ::isWakePhrase, partialCounts = true)
 
     /** Stop the current session; it reports [Heard.Silence]. */
     fun cancel() = finish(Heard.Silence)
 
-    private suspend fun session(grammar: String?, timeoutMs: Int, accept: (String) -> Boolean): Heard =
+    private suspend fun session(grammar: String?, timeoutMs: Int, accept: (String) -> Boolean, partialCounts: Boolean): Heard =
         suspendCancellableCoroutine { cont ->
+            acceptPartial = partialCounts
             val id = start(grammar, timeoutMs, accept) { heard -> if (cont.isActive) cont.resume(heard) }
             cont.invokeOnCancellation { finishOnMain(id) }
         }
@@ -94,7 +100,11 @@ class SiaEars {
 
     private val listener = object : RecognitionListener {
         override fun onPartialResult(hypothesis: String?) {
-            if (onHeard != null) _partial.value = field(hypothesis, "partial").replace(UNK, "").trim()
+            if (onHeard == null) return
+            val text = field(hypothesis, "partial").replace(UNK, "").trim()
+            _partial.value = text
+            // Early reaction only for the full phrase ("hey sia"); a lone "sia" waits for the pause.
+            if (acceptPartial && isFullWakePhrase(text)) finish(Heard.Text(text))
         }
 
         // Called each time you pause. Empty or rejected results are ignored and listening continues.
@@ -160,5 +170,7 @@ class SiaEars {
         private val NOISE_WORDS = setOf("the", "huh", "a", "uh", "um", "hmm", "oh", "ah")
 
         fun isWakePhrase(text: String): Boolean = WAKE_PHRASES.any { text.contains(it) }
+
+        private fun isFullWakePhrase(text: String): Boolean = WAKE_PHRASES.any { it.contains(' ') && text.contains(it) }
     }
 }

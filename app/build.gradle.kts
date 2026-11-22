@@ -14,8 +14,8 @@ android {
     defaultConfig {
         applicationId = "com.heysia.app"
         minSdk = 30          // Android 11+ (needed for background microphone). Your A55 runs Android 14+.
-        versionCode = 10
-        versionName = "1.0.0"
+        versionCode = 11
+        versionName = "1.1.0"
         targetSdk = 35
 
         // Phone (arm64) + Android Studio emulator (x86_64). Skips other CPUs to keep the APK small.

@@ -142,7 +142,7 @@ fun HomeScreen(
             }
         } else if (enabled) {
             Text(
-                "Say \"Hey Sia\", wait for the beep, then your command. Try \"what can you do?\"",
+                "Say \"Hey Sia\". When she answers, say your command. Try \"what can you do?\"",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

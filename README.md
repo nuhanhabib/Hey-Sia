@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4?logo=jetpackcompose&logoColor=white" alt="Jetpack Compose">
   <img src="https://img.shields.io/badge/works-offline-success" alt="Works offline">
   <img src="https://img.shields.io/badge/cost-%240-brightgreen" alt="Free">
-  <img src="https://img.shields.io/badge/version-1.0.0-blueviolet" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-blueviolet" alt="Version 1.1.0">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
 </p>
 
@@ -30,7 +30,7 @@
 
 ## What she can do
 
-Say **"Hey Sia"**, wait for the beep, then say a command.
+Say **"Hey Sia"**. She answers (*"Yes?"*), then say your command.
 
 | Category | Try saying | Works offline |
 |---|---|:---:|
@@ -77,6 +77,9 @@ Sia asks only for what a feature truly needs. Every permission is explained in t
 - 🙈 **Private apps list:** notifications from email, photos, notes, banking, payment and password apps are never read aloud. You can edit the list.
 - 🔢 **One-time codes** (OTPs, verification codes) are never read aloud, from any app.
 - 💾 **Nothing is saved:** no recordings, no transcripts on disk, no history. The "Recent" list on screen lives in memory only.
+- 🎧 **Speech recognition:** "Hey Sia" is always detected on the phone. Commands use your phone's own speech
+  recognition (much more accurate). With the **offline English pack** installed, that also runs on the phone.
+  Prefer 100% offline? Choose *Sia's built-in offline model* in **Listening settings**.
 - 📴 **No internet needed** for listening, speaking or commands. The internet is used only for YouTube, news and search, and only when you're already online.
 
 ## Install on your phone
@@ -102,16 +105,20 @@ Download the APK, open it on your phone, and allow **Install unknown apps** when
 2. **Accessibility** and **Notification access** may show *"Restricted setting"* because Sia isn't from the Play Store.
    Fix: **Settings → Apps → Sia → ⋮ (top right) → Allow restricted settings**, then turn them on again.
 3. Allow **Keep running in background** so Samsung's battery saver doesn't close Sia.
-4. Tap **Turn on Sia**. A small notification shows she's listening.
-5. Say **"Hey Sia"**, wait for the beep, and try *"What can you do?"*
+4. **For the best accuracy offline:** open the **Google app → profile picture → Settings → Voice →
+   Offline speech recognition** and download **English**. (Shortcut in Sia's **Listening settings**.)
+5. Tap **Turn on Sia**. A small notification shows she's listening.
+6. Say **"Hey Sia"**. When she answers, try *"What can you do?"*
 
 ## Good to know
 
-- **Pause after "Hey Sia"** and wait for the beep before your command.
+- **Wait for her answer** after "Hey Sia" (*"Yes?"*) before saying your command.
+- **She mishears you?** Open **Listening settings** and try the English accent closest to yours.
 - **After restarting your phone, open Sia once.** Android doesn't let apps switch the microphone on by themselves at startup.
 - **Quick Settings tiles:** Wi-Fi, Bluetooth, mobile data and hotspot are switched through your Quick Settings panel, so those tiles must be in the panel.
 - **Messenger** has no official way for other apps to start a chat, so Sia does it on screen. If Messenger changes its layout, this may need an update. WhatsApp is more reliable.
-- **Accuracy:** the offline speech model is small (~40 MB) so it runs fast on any phone. Clear speech helps, and unusual names may need a second try.
+- **Accuracy:** Sia hears up to 5 guesses of what you said and picks the one that matches an app, contact or command.
+  The built-in offline model is small (~40 MB) and less accurate than the phone's recognition.
 
 ## How it works
 
@@ -130,7 +137,7 @@ flowchart LR
 | Part | Tool | Why |
 |---|---|---|
 | Language & UI | Kotlin + Jetpack Compose | Native Android, full access to phone features |
-| Speech to text | [Vosk](https://alphacephei.com/vosk/) small English model | Free, open source, fully offline, light on RAM |
+| Speech to text | Phone's speech recognition (offline pack), with [Vosk](https://alphacephei.com/vosk/) as fully offline fallback | Accurate with accents; free; works offline |
 | Wake word | Vosk with a restricted grammar | Strict "Hey Sia" detection with no extra model or account |
 | Voice | Android TextToSpeech | Built into the phone, works offline |
 | Phone control | Android intents + Accessibility Service | Opens apps, dials, toggles settings like a human would |

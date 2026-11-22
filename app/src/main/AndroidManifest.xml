@@ -48,6 +48,10 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
+        <!-- Use the phone's speech recognition service for commands. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
         <!-- Step 5: see which apps can be opened by name, and find the dialer and clock. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

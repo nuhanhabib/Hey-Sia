@@ -41,6 +41,21 @@ class SiaBrain(private val context: Context) {
     private val messaging = Messaging(context, apps)
     private val news = News(countryCode())
 
+    /**
+     * The speech recogniser gives several guesses of what you said, best first.
+     * Use the first one that makes sense as a command; otherwise the best guess.
+     */
+    fun pick(guesses: List<String>): String {
+        val parsed = guesses.map { it to CommandParser.parse(it) }
+        // Best: a guess naming an app you have, or a person in your contacts.
+        parsed.firstOrNull { (_, c) ->
+            (c is Command.OpenApp && c.name != null && apps.find(c.name) != null) ||
+                (c is Command.Call && c.who != null && contacts.search(c.who).any { it.score >= SURE })
+        }?.let { return it.first }
+        // Next: any guess that is a command Sia knows.
+        return parsed.firstOrNull { it.second !is Command.Unknown }?.first ?: guesses.first()
+    }
+
     suspend fun handle(text: String): Reply = when (val command = CommandParser.parse(text)) {
         is Command.OpenApp -> openApp(command.name)
         is Command.Call -> call(command.who)

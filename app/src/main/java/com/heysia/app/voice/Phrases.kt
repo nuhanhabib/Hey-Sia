@@ -18,6 +18,10 @@ object Phrases {
 
     fun youSaid(text: String) = "You said: $text"
 
+    /** What Sia says when she hears "Hey Sia", so you know she's ready. */
+    private val wakeReplies = listOf("Yes?", "I'm listening.", "How can I help?", "Yes, I'm here.")
+    fun wakeReply(): String = wakeReplies.random()
+
     /** Lines offered on the test screen. */
     val samples = listOf(GREETING, OFFLINE, NOT_UNDERSTOOD)
 }
