@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/works-offline-success" alt="Works offline">
   <img src="https://img.shields.io/badge/cost-%240-brightgreen" alt="Free">
   <img src="https://img.shields.io/badge/status-in%20development-orange" alt="In development">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
 </p>
 
 <p align="center">
@@ -115,6 +116,10 @@ app/src/main/java/com/heysia/app/
 - [ ] Step 8: Read notifications aloud (with private apps list)
 - [ ] Step 9: Online mode and daily news briefing
 - [ ] Step 10: Polish and release APK
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Nuhan Habib.
 
 ---
 
