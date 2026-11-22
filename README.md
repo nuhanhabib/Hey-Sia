@@ -118,4 +118,4 @@ app/src/main/java/com/heysia/app/
 
 ---
 
-<p align="center">Made with ❤️ by <a href="https://github.com/nuhanhabib">Nuhan Habib</a></p>
+<p align="center">Made by <a href="https://github.com/nuhanhabib">Nuhan Habib</a></p>
