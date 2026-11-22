@@ -93,6 +93,18 @@ class CommandParserTest {
         assertEquals(Command.ReadNotifications, parse("do i have any messages"))
     }
 
+    @Test fun newsAndOnline() {
+        assertEquals(Command.News(null), parse("tell me today's latest news"))
+        assertEquals(Command.News(null), parse("news"))
+        assertEquals(Command.News("cricket"), parse("cricket news"))
+        assertEquals(Command.News("bangladesh"), parse("latest news about bangladesh"))
+        assertEquals(Command.Briefing, parse("good morning"))
+        assertEquals(Command.Briefing, parse("help me plan my day"))
+        assertEquals(Command.WebSearch("best biryani in dhaka"), parse("search for best biryani in dhaka"))
+        assertEquals(Command.Toggle(PhoneSetting.MobileData, true), parse("go online"))
+        assertEquals(Command.OnlineStatus, parse("am i online"))
+    }
+
     @Test fun controlsTheFlashlight() {
         assertEquals(Command.Flashlight(true), parse("turn on the flashlight"))
         assertEquals(Command.Flashlight(false), parse("torch off"))

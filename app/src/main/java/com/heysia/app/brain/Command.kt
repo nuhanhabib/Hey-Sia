@@ -17,6 +17,12 @@ sealed interface Command {
     /** Missing parts ([to], [text], or [app]) are asked for. */
     data class SendMessage(val app: MessageApp?, val to: String?, val text: String?) : Command
     data object ReadNotifications : Command
+    /** [topic] is null for top headlines. */
+    data class News(val topic: String?) : Command
+    /** Morning briefing: greeting, date, time, next alarm, battery and headlines. */
+    data object Briefing : Command
+    data class WebSearch(val query: String) : Command
+    data object OnlineStatus : Command
     data object TellTime : Command
     data object TellDate : Command
     data object Battery : Command

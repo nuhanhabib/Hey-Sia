@@ -21,6 +21,10 @@ object CommandParser {
             ?: timer(text)
             ?: alarm(text)
             ?: call(text)
+            ?: briefing(text)
+            ?: news(text)
+            ?: online(text)
+            ?: search(text)
             ?: notifications(text)
             ?: message(text)
             ?: toggle(text, words)
@@ -100,6 +104,39 @@ object CommandParser {
             else -> return null // "what's my wifi password" etc. is not a toggle
         }
         return Command.Toggle(setting, on)
+    }
+
+    private fun briefing(text: String): Command? =
+        if (Regex("^good morning|\\b(briefing|brief me|my day|plan my day|manage my time|start my day)\\b").containsMatchIn(text))
+            Command.Briefing else null
+
+    private val newsFiller = setOf(
+        "", "the", "latest", "today's", "todays", "today", "top", "breaking", "world", "some", "any", "me", "tell",
+        "give", "read", "what's", "whats", "what", "is", "the", "in", "of", "current", "recent", "new", "local", "updates", "update"
+    )
+
+    private fun news(text: String): Command? {
+        if (!Regex("\\b(news|headlines|what's happening|whats happening)\\b").containsMatchIn(text)) return null
+        Regex("\\b(?:news|headlines) (?:about|on|from|for) (.+)$").find(text)?.let {
+            return Command.News(it.groupValues[1].trim())
+        }
+        val before = text.substringBefore(" news").substringBefore(" headlines").substringBefore("news").trim()
+        val topic = before.split(" ").filter { it !in newsFiller }.joinToString(" ")
+        return Command.News(topic.ifBlank { null })
+    }
+
+    private fun online(text: String): Command? = when {
+        Regex("^go online$|^get online$|^connect to (the )?internet$").matches(text) -> Command.Toggle(PhoneSetting.MobileData, true)
+        Regex("^go offline$").matches(text) -> Command.Toggle(PhoneSetting.MobileData, false)
+        Regex("^(am i|are you|are we) (online|offline|connected)|^(is|do i have) (the )?internet").containsMatchIn(text) -> Command.OnlineStatus
+        else -> null
+    }
+
+    private fun search(text: String): Command? {
+        val m = Regex("^(search for|search the web for|search google for|search|google|look up|find on google)\\b(.+)").find(text)
+            ?: return null
+        val q = m.groupValues[2].trim().removePrefix("for ").trim()
+        return if (q.isEmpty()) null else Command.WebSearch(q)
     }
 
     private fun notifications(text: String): Command? =

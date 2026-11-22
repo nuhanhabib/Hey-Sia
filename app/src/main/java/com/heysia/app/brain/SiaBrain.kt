@@ -1,8 +1,12 @@
 package com.heysia.app.brain
 
+import android.app.AlarmManager
+import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import com.heysia.app.a11y.Messaging
 import com.heysia.app.a11y.QuickSettings
 import com.heysia.app.a11y.ScreenRobot
@@ -13,6 +17,7 @@ import com.heysia.app.actions.Contacts
 import com.heysia.app.actions.DeviceControls
 import com.heysia.app.actions.Music
 import com.heysia.app.actions.Network
+import com.heysia.app.actions.News
 import com.heysia.app.actions.Notifier
 import com.heysia.app.actions.Screens
 import com.heysia.app.notify.SiaNotificationListener
@@ -21,6 +26,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.net.URLEncoder
+import kotlinx.coroutines.delay
 
 /** Turns what you said into an action and a spoken reply. */
 class SiaBrain(private val context: Context) {
@@ -32,6 +39,7 @@ class SiaBrain(private val context: Context) {
     private val music = Music(context, apps)
     private val notifier = Notifier(context)
     private val messaging = Messaging(context, apps)
+    private val news = News(countryCode())
 
     suspend fun handle(text: String): Reply = when (val command = CommandParser.parse(text)) {
         is Command.OpenApp -> openApp(command.name)
@@ -46,6 +54,10 @@ class SiaBrain(private val context: Context) {
         is Command.Toggle -> toggle(command.setting, command.on)
         is Command.SendMessage -> sendMessage(command)
         Command.ReadNotifications -> readNotifications()
+        is Command.News -> news(command.topic)
+        Command.Briefing -> briefing()
+        is Command.WebSearch -> webSearch(command.query)
+        Command.OnlineStatus -> Reply(if (Network.isOnline(context)) "You're online." else "You're offline.")
         Command.TellTime -> Reply("It's ${SimpleDateFormat("h:mm a", Locale.US).format(Date())}.")
         Command.TellDate -> Reply("Today is ${SimpleDateFormat("EEEE, MMMM d", Locale.US).format(Date())}.")
         Command.Battery -> battery()
@@ -189,12 +201,22 @@ class SiaBrain(private val context: Context) {
         val name = setting.spoken
         val service = SiaAccessibilityService.instance ?: return openSettingFallback(setting)
         return when (QuickSettings(ScreenRobot(service)).set(setting, on)) {
-            QuickSettings.Result.Done -> Reply("$name ${if (on) "on" else "off"}.")
+            QuickSettings.Result.Done ->
+                if (on && setting in CONNECTIONS) Reply(waitUntilOnline(name)) else Reply("$name ${if (on) "on" else "off"}.")
             QuickSettings.Result.AlreadySet -> Reply("$name is already ${if (on) "on" else "off"}.")
             QuickSettings.Result.NotFound -> Reply(
                 "I couldn't find the $name switch in Quick Settings. Please add the $name tile to your Quick Settings panel."
             )
         }
+    }
+
+    /** After switching data or Wi-Fi on, wait a little for the connection, then say whether it worked. */
+    private suspend fun waitUntilOnline(name: String): String {
+        repeat(ONLINE_WAIT_STEPS) {
+            if (Network.isOnline(context)) return "$name on. I'm online now."
+            delay(ONLINE_WAIT_STEP_MS)
+        }
+        return "$name is on, but I'm not connected to the internet yet."
     }
 
     /** Without the accessibility service, the best Sia can do is open the right settings page. */
@@ -284,6 +306,65 @@ class SiaBrain(private val context: Context) {
         }
     }
 
+    // ---------- News, briefing and web search (online only) ----------
+
+    private suspend fun news(topic: String?): Reply {
+        if (!Network.isOnline(context)) return Reply(Phrases.OFFLINE)
+        val headlines = news.headlines(topic)
+        if (headlines.isEmpty()) return Reply("Sorry, I couldn't get the news right now.")
+        val intro = if (topic == null) "Here are today's top headlines. " else "Here's the latest on $topic. "
+        return Reply(intro + numbered(headlines))
+    }
+
+    /** Your morning briefing: everything you need to plan the day, in one go. */
+    private suspend fun briefing(): Reply {
+        val now = Calendar.getInstance()
+        val greeting = when (now.get(Calendar.HOUR_OF_DAY)) {
+            in 4..11 -> "Good morning!"
+            in 12..16 -> "Good afternoon!"
+            else -> "Good evening!"
+        }
+        val parts = mutableListOf(
+            greeting,
+            "It's ${SimpleDateFormat("h:mm a", Locale.US).format(now.time)} on ${SimpleDateFormat("EEEE, MMMM d", Locale.US).format(now.time)}."
+        )
+        nextAlarm()?.let { parts += it }
+        val b = device.battery()
+        parts += "Battery is at ${b.percent} percent."
+        if (Network.isOnline(context)) {
+            val headlines = news.headlines(count = BRIEFING_HEADLINES)
+            if (headlines.isNotEmpty()) parts += "Top news. " + numbered(headlines)
+        } else {
+            parts += "You're offline, so I can't get the news. Say \"turn on data\" if you want the headlines."
+        }
+        parts += "Have a great day!"
+        return Reply(parts.joinToString(" "))
+    }
+
+    /** "Your next alarm is at 6:00 AM." if one is set within the next day. */
+    private fun nextAlarm(): String? {
+        val next = context.getSystemService(AlarmManager::class.java).nextAlarmClock ?: return null
+        val inMs = next.triggerTime - System.currentTimeMillis()
+        if (inMs !in 0..DAY_MS) return null
+        return "Your next alarm is at ${SimpleDateFormat("h:mm a", Locale.US).format(Date(next.triggerTime))}."
+    }
+
+    private fun webSearch(query: String): Reply {
+        if (!Network.isOnline(context)) return Reply(Phrases.OFFLINE)
+        if (!Screens.canOpen(context)) return Reply(Phrases.NEED_OPEN_PERMISSION)
+        val opened = Screens.open(context, Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, query)) ||
+            Screens.open(context, Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + URLEncoder.encode(query, "UTF-8"))))
+        return if (opened) Reply("Searching for $query.") else Reply("I couldn't open a browser.")
+    }
+
+    private fun numbered(items: List<String>): String =
+        items.mapIndexed { i, h -> "${ORDINALS.getOrElse(i) { "Next" }}. $h." }.joinToString(" ")
+
+    private fun countryCode(): String {
+        val tm = context.getSystemService(TelephonyManager::class.java)
+        return tm?.simCountryIso?.ifBlank { null } ?: tm?.networkCountryIso?.ifBlank { null } ?: Locale.getDefault().country
+    }
+
     // ---------- Phone controls ----------
 
     private fun flashlight(on: Boolean): Reply = when {
@@ -340,8 +421,14 @@ class SiaBrain(private val context: Context) {
     private companion object {
         const val SURE = 0.85
         const val NOTIFICATIONS_PER_TURN = 5
+        const val BRIEFING_HEADLINES = 3
+        const val ONLINE_WAIT_STEPS = 12
+        const val ONLINE_WAIT_STEP_MS = 1000L
+        const val DAY_MS = 24 * 60 * 60 * 1000L
+        val CONNECTIONS = setOf(PhoneSetting.MobileData, PhoneSetting.WiFi)
+        val ORDINALS = listOf("One", "Two", "Three", "Four", "Five")
         const val HELP = "You can say things like: open YouTube, call Mom, set an alarm for six thirty, " +
             "timer for ten minutes, play Believer, next song, turn on Wi-Fi, " +
-            "send a WhatsApp message to Rafi saying I'm on my way, read my notifications, flashlight on, volume up, what time is it, or battery."
+            "send a WhatsApp message to Rafi saying I'm on my way, read my notifications, tell me today's news, good morning, flashlight on, volume up, what time is it, or battery."
     }
 }
