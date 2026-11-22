@@ -10,6 +10,12 @@
     <!-- Step 3 (listening): microphone, so Sia can hear you. Speech is processed on the phone only. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Step 4 (wake word): keep listening for "Hey Sia" in the background, with a visible notification. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!--
         Step 2 (voice): no permission needed. Android 11+ hides other apps by default,
         so Sia must declare that she looks for a text-to-speech engine to talk through.
@@ -34,5 +40,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.SiaService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 </manifest>

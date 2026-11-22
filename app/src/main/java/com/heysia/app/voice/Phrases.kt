@@ -8,6 +8,7 @@ object Phrases {
     const val VOICE_SAMPLE = "Hi, this is how I sound."
     const val HEARD_NOTHING = "I didn't hear anything."
     const val MIC_NEEDED = "I need the microphone to hear you."
+    const val SOMETHING_WRONG = "Sorry, something went wrong."
 
     fun youSaid(text: String) = "You said: $text"
 
