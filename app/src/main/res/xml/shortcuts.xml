@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press Sia's icon on the home screen for "Talk to Sia". -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="talk"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_talk"
+        android:shortcutLongLabel="@string/shortcut_talk_long">
+        <intent
+            android:action="com.heysia.app.action.TALK"
+            android:targetPackage="com.heysia.app"
+            android:targetClass="com.heysia.app.MainActivity" />
+    </shortcut>
+</shortcuts>

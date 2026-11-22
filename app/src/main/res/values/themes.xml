@@ -1,3 +1,7 @@
 <resources>
-    <style name="Theme.HeySia" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.HeySia" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sia_background</item>
+        <item name="android:statusBarColor">@color/sia_background</item>
+        <item name="android:navigationBarColor">@color/sia_background</item>
+    </style>
 </resources>

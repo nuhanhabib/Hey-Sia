@@ -9,11 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,6 +22,7 @@ import com.heysia.app.service.SiaService
 import com.heysia.app.ui.HomeScreen
 import com.heysia.app.ui.PrivateAppsScreen
 import com.heysia.app.ui.Setup
+import com.heysia.app.ui.SiaTheme
 import com.heysia.app.ui.VoiceTestScreen
 import com.heysia.app.voice.SiaVoice
 
@@ -36,9 +35,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enabledState.value = prefs.getBoolean(KEY_ENABLED, false)
+        handleTalkIntent(intent)
 
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            SiaTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     var page by rememberSaveable { mutableStateOf(Page.Home) }
                     BackHandler(enabled = page != Page.Home) { page = Page.Home }
@@ -69,6 +69,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleTalkIntent(intent)
+    }
+
+    /** Opened from the "Talk to Sia" shortcut, the Quick Settings tile or the assistant button. */
+    private fun handleTalkIntent(intent: Intent?) {
+        if (intent?.action != ACTION_TALK && intent?.action != Intent.ACTION_ASSIST) return
+        if (!Setup.granted(this, android.Manifest.permission.RECORD_AUDIO)) return // the home screen asks
+        if (!enabledState.value) setEnabled(true)
+        SiaService.talkNow(this)
+    }
+
     override fun onDestroy() {
         voice?.shutdown()
         super.onDestroy()
@@ -93,6 +106,7 @@ class MainActivity : ComponentActivity() {
     private enum class Page { Home, Voice, PrivateApps }
 
     companion object {
+        const val ACTION_TALK = "com.heysia.app.action.TALK"
         private const val PREFS = "sia_settings"
         private const val KEY_ENABLED = "enabled"
     }

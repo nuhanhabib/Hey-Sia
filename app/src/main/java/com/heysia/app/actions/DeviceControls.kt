@@ -18,21 +18,15 @@ class DeviceControls(private val context: Context) {
 
     // ---------- Flashlight ----------
 
-    private val torchCamera: String? by lazy {
-        cameras.cameraIdList.firstOrNull { id ->
+    /** Returns false if this phone has no flash or the camera is busy. */
+    fun setFlashlight(on: Boolean): Boolean = try {
+        val id = cameras.cameraIdList.firstOrNull { id ->
             cameras.getCameraCharacteristics(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
         }
-    }
-
-    /** Returns false if this phone has no flash or the camera is busy. */
-    fun setFlashlight(on: Boolean): Boolean {
-        val id = torchCamera ?: return false
-        return try {
-            cameras.setTorchMode(id, on)
-            true
-        } catch (e: Exception) {
-            false
-        }
+        if (id != null) cameras.setTorchMode(id, on)
+        id != null
+    } catch (e: Exception) {
+        false
     }
 
     // ---------- Volume (media) ----------

@@ -1,0 +1,39 @@
+<!-- Voice orb: two rings and a sound wave, purple to pink. Kept inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M54,24a30,30 0,1 1,0 60a30,30 0,1 1,0 -60"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.5"
+        android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="24" android:startY="54" android:endX="84" android:endY="54">
+                <item android:offset="0" android:color="#FF7F5CFF" />
+                <item android:offset="1" android:color="#FFFF7AC6" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M54,33a21,21 0,1 1,0 42a21,21 0,1 1,0 -42"
+        android:strokeWidth="2"
+        android:fillColor="#00000000">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="33" android:startY="54" android:endX="75" android:endY="54">
+                <item android:offset="0" android:color="#FF7F5CFF" />
+                <item android:offset="1" android:color="#FFFF7AC6" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M41,48.5a2,2 0,0 1,4 0v11a2,2 0,0 1,-4 0z M47.5,42a2,2 0,0 1,4 0v24a2,2 0,0 1,-4 0z M52,37a2,2 0,0 1,4 0v34a2,2 0,0 1,-4 0z M56.5,44a2,2 0,0 1,4 0v20a2,2 0,0 1,-4 0z M63,50a2,2 0,0 1,4 0v8a2,2 0,0 1,-4 0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="41" android:startY="54" android:endX="67" android:endY="54">
+                <item android:offset="0" android:color="#FF7F5CFF" />
+                <item android:offset="1" android:color="#FFFF7AC6" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

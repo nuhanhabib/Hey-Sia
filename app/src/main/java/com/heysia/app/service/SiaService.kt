@@ -22,6 +22,7 @@ import com.heysia.app.listen.SiaEars
 import com.heysia.app.listen.SpeechModel
 import com.heysia.app.voice.Phrases
 import com.heysia.app.voice.SiaVoice
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Keeps Sia ready in the background: waits for "Hey Sia", listens to the command, acts, replies.
@@ -47,6 +49,7 @@ class SiaService : Service() {
     private val ears = SiaEars()
     private var loop: Job? = null
     private var talkNowRequested = false
+    private var inForeground = false
     private val beeper by lazy { ToneGenerator(AudioManager.STREAM_NOTIFICATION, BEEP_VOLUME) }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -63,7 +66,10 @@ class SiaService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (!goForeground()) return START_NOT_STICKY
+        // "Talk now" on a running Sia arrives through startService(); every other start comes from
+        // startForegroundService(), which Android requires to be confirmed with startForeground().
+        val alreadyRunningTalkNow = intent?.action == ACTION_TALK_NOW && inForeground
+        if (!alreadyRunningTalkNow && !goForeground()) return START_NOT_STICKY
 
         if (loop?.isActive != true) loop = scope.launch { runLoop() }
         if (intent?.action == ACTION_TALK_NOW) talkNow()
@@ -125,7 +131,10 @@ class SiaService : Service() {
                     SiaState.add(fromUser = true, heard.text)
                     SiaState.setPhase(SiaState.Phase.Thinking)
                     val reply = try {
-                        handler(heard.text)
+                        // Searching contacts or songs can take a moment: keep it off the main thread.
+                        withContext(Dispatchers.Default) { handler(heard.text) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Reply(Phrases.SOMETHING_WRONG)
                     }
@@ -158,6 +167,7 @@ class SiaService : Service() {
             this, NOTIFICATION_ID, buildNotification(),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
+        inForeground = true
         true
     } catch (e: Exception) {
         SiaState.setPhase(SiaState.Phase.Error, "Android didn't let me start listening. Open the app and try again.")
@@ -217,9 +227,9 @@ class SiaService : Service() {
 
         /** Start listening for a command now, without the wake word. Starts Sia if she's off. */
         fun talkNow(context: Context) {
-            ContextCompat.startForegroundService(
-                context, Intent(context, SiaService::class.java).setAction(ACTION_TALK_NOW)
-            )
+            val intent = Intent(context, SiaService::class.java).setAction(ACTION_TALK_NOW)
+            if (SiaState.phase.value == SiaState.Phase.Off) ContextCompat.startForegroundService(context, intent)
+            else context.startService(intent) // already running in the foreground
         }
     }
 }
