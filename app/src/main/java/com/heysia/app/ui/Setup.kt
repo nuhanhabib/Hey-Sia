@@ -50,6 +50,36 @@ object Setup {
         }
         add(
             SetupItem(
+                title = "Open apps",
+                why = "Lets Sia open apps, the dialer and the clock while she runs in the background " +
+                    "(Android calls this \"Display over other apps\").",
+                required = false,
+                settingsScreen = { context ->
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.fromParts("package", context.packageName, null))
+                },
+                isDone = { Settings.canDrawOverlays(it) }
+            )
+        )
+        add(
+            SetupItem(
+                title = "Contacts",
+                why = "To call people by name. Sia reads only names and numbers, and never stores them.",
+                required = false,
+                permissions = listOf(Manifest.permission.READ_CONTACTS),
+                isDone = { granted(it, Manifest.permission.READ_CONTACTS) }
+            )
+        )
+        add(
+            SetupItem(
+                title = "Phone calls",
+                why = "To start a call straight away. Without it, Sia opens the dialer and you press call.",
+                required = false,
+                permissions = listOf(Manifest.permission.CALL_PHONE),
+                isDone = { granted(it, Manifest.permission.CALL_PHONE) }
+            )
+        )
+        add(
+            SetupItem(
                 title = "Keep running in background",
                 why = "Samsung phones close background apps to save battery. This keeps Sia awake.",
                 required = false,

@@ -17,12 +17,37 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!--
+        Step 5 (commands):
+        - contacts + phone: call people by name (reads names and numbers only)
+        - set alarm: set alarms and timers in the Clock app
+        - display over other apps: lets the background service open apps, the dialer and the clock
+    -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- A phone without a SIM (or a tablet) can still install Sia. -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
+    <!--
         Step 2 (voice): no permission needed. Android 11+ hides other apps by default,
         so Sia must declare that she looks for a text-to-speech engine to talk through.
     -->
     <queries>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <!-- Step 5: see which apps can be opened by name, and find the dialer and clock. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
         </intent>
     </queries>
 

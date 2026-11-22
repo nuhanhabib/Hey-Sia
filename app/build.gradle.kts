@@ -109,4 +109,6 @@ dependencies {
 
     // Offline speech recognition (free, open source). Pulls in JNA automatically.
     implementation("com.alphacephei:vosk-android:0.3.47")
+
+    testImplementation("junit:junit:4.13.2")
 }
