@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-label="Hey Sia - private, offline voice assistant for Android">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f0c29"/>
+      <stop offset="0.55" stop-color="#2b1a5a"/>
+      <stop offset="1" stop-color="#4a1f6e"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7f5cff"/>
+      <stop offset="1" stop-color="#ff7ac6"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff7ac6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ff7ac6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="400" fill="url(#bg)"/>
+  <circle cx="1010" cy="200" r="190" fill="url(#glow)"/>
+
+  <!-- Voice orb -->
+  <circle cx="1010" cy="200" r="92" fill="none" stroke="url(#wave)" stroke-width="3" opacity="0.5"/>
+  <circle cx="1010" cy="200" r="66" fill="none" stroke="url(#wave)" stroke-width="3" opacity="0.8"/>
+  <g fill="url(#wave)">
+    <rect x="968" y="182" width="10" height="36" rx="5"/>
+    <rect x="988" y="162" width="10" height="76" rx="5"/>
+    <rect x="1008" y="146" width="10" height="108" rx="5"/>
+    <rect x="1028" y="166" width="10" height="68" rx="5"/>
+    <rect x="1048" y="186" width="10" height="28" rx="5"/>
+  </g>
+
+  <!-- Text -->
+  <text x="96" y="190" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="104" font-weight="700" fill="#ffffff">Hey Sia</text>
+  <text x="100" y="248" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="32" fill="#d9ccff">Your private, offline voice assistant for Android</text>
+  <g font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" fill="#ffffff">
+    <rect x="100" y="282" width="140" height="40" rx="20" fill="#ffffff" fill-opacity="0.12"/>
+    <text x="170" y="309" text-anchor="middle">Offline</text>
+    <rect x="254" y="282" width="140" height="40" rx="20" fill="#ffffff" fill-opacity="0.12"/>
+    <text x="324" y="309" text-anchor="middle">Private</text>
+    <rect x="408" y="282" width="140" height="40" rx="20" fill="#ffffff" fill-opacity="0.12"/>
+    <text x="478" y="309" text-anchor="middle">Free</text>
+  </g>
+</svg>
