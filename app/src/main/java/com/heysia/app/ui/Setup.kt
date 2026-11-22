@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import android.content.ComponentName
+import com.heysia.app.a11y.SiaAccessibilityService
 import com.heysia.app.actions.Music
 
 /**
@@ -63,6 +65,17 @@ object Setup {
         )
         add(
             SetupItem(
+                title = "Accessibility",
+                why = "Lets Sia switch Wi-Fi, Bluetooth, data and hotspot, and press Send in WhatsApp and Messenger. " +
+                    "She only acts when you ask. If Android says \"Restricted setting\": open Sia's App info, " +
+                    "tap the ⋮ menu, choose \"Allow restricted settings\", then try again.",
+                required = false,
+                settingsScreen = { Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) },
+                isDone = { context -> enabledInSettings(context, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, SiaAccessibilityService::class.java) }
+            )
+        )
+        add(
+            SetupItem(
                 title = "Contacts",
                 why = "To call people by name. Sia reads only names and numbers, and never stores them.",
                 required = false,
@@ -109,6 +122,13 @@ object Setup {
 
     fun granted(context: Context, permission: String): Boolean =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+    /** Whether a service of ours is switched on in a Settings list like the accessibility services. */
+    fun enabledInSettings(context: Context, key: String, service: Class<*>): Boolean {
+        val mine = ComponentName(context, service)
+        val enabled = Settings.Secure.getString(context.contentResolver, key) ?: return false
+        return enabled.split(':').any { ComponentName.unflattenFromString(it) == mine }
+    }
 
     /** Android's page for this app, where you can change any permission by hand. */
     fun appDetails(context: Context): Intent =

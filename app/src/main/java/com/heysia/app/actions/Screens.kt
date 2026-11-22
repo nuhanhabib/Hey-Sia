@@ -4,12 +4,16 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import com.heysia.app.a11y.SiaAccessibilityService
 
 /** Opening other apps' screens from Sia's background service. */
 object Screens {
 
-    /** Android only lets a background app open screens if you allowed "Display over other apps". */
-    fun canOpen(context: Context): Boolean = Settings.canDrawOverlays(context)
+    /**
+     * Android only lets a background app open screens if you allowed "Display over other apps"
+     * or turned on Sia's accessibility service.
+     */
+    fun canOpen(context: Context): Boolean = Settings.canDrawOverlays(context) || SiaAccessibilityService.isRunning
 
     /** Returns false if no app can handle it or Android refused. */
     fun open(context: Context, intent: Intent): Boolean = try {

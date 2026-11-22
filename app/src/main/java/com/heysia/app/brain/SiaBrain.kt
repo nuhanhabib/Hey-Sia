@@ -1,6 +1,12 @@
 package com.heysia.app.brain
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
+import com.heysia.app.a11y.Messaging
+import com.heysia.app.a11y.QuickSettings
+import com.heysia.app.a11y.ScreenRobot
+import com.heysia.app.a11y.SiaAccessibilityService
 import com.heysia.app.actions.AppLauncher
 import com.heysia.app.actions.Calls
 import com.heysia.app.actions.Contacts
@@ -24,6 +30,7 @@ class SiaBrain(private val context: Context) {
     private val device = DeviceControls(context)
     private val music = Music(context, apps)
     private val notifier = Notifier(context)
+    private val messaging = Messaging(context, apps)
 
     suspend fun handle(text: String): Reply = when (val command = CommandParser.parse(text)) {
         is Command.OpenApp -> openApp(command.name)
@@ -35,6 +42,8 @@ class SiaBrain(private val context: Context) {
         is Command.Volume -> volume(command)
         is Command.PlayMusic -> playMusic(command)
         is Command.Media -> media(command.action)
+        is Command.Toggle -> toggle(command.setting, command.on)
+        is Command.SendMessage -> sendMessage(command)
         Command.TellTime -> Reply("It's ${SimpleDateFormat("h:mm a", Locale.US).format(Date())}.")
         Command.TellDate -> Reply("Today is ${SimpleDateFormat("EEEE, MMMM d", Locale.US).format(Date())}.")
         Command.Battery -> battery()
@@ -172,6 +181,83 @@ class SiaBrain(private val context: Context) {
         return Reply("Okay.")
     }
 
+    // ---------- Wi-Fi, Bluetooth, data, hotspot, airplane mode ----------
+
+    private suspend fun toggle(setting: PhoneSetting, on: Boolean): Reply {
+        val name = setting.spoken
+        val service = SiaAccessibilityService.instance ?: return openSettingFallback(setting)
+        return when (QuickSettings(ScreenRobot(service)).set(setting, on)) {
+            QuickSettings.Result.Done -> Reply("$name ${if (on) "on" else "off"}.")
+            QuickSettings.Result.AlreadySet -> Reply("$name is already ${if (on) "on" else "off"}.")
+            QuickSettings.Result.NotFound -> Reply(
+                "I couldn't find the $name switch in Quick Settings. Please add the $name tile to your Quick Settings panel."
+            )
+        }
+    }
+
+    /** Without the accessibility service, the best Sia can do is open the right settings page. */
+    private fun openSettingFallback(setting: PhoneSetting): Reply {
+        val action = when (setting) {
+            PhoneSetting.WiFi -> Settings.Panel.ACTION_WIFI
+            PhoneSetting.MobileData -> Settings.Panel.ACTION_INTERNET_CONNECTIVITY
+            PhoneSetting.Bluetooth -> Settings.ACTION_BLUETOOTH_SETTINGS
+            PhoneSetting.Hotspot -> Settings.ACTION_WIRELESS_SETTINGS
+            PhoneSetting.Airplane -> Settings.ACTION_AIRPLANE_MODE_SETTINGS
+        }
+        val opened = Screens.canOpen(context) && Screens.open(context, Intent(action))
+        return Reply(
+            (if (opened) "I've opened the ${setting.spoken} settings. Tap the switch. " else "") + Phrases.NEED_ACCESSIBILITY
+        )
+    }
+
+    // ---------- WhatsApp and Messenger ----------
+
+    private suspend fun sendMessage(command: Command.SendMessage): Reply {
+        val app = command.app ?: return Reply("On WhatsApp or Messenger?") { answer ->
+            val t = answer.lowercase()
+            val picked = when {
+                t.contains("whats") || t.contains("what's") -> MessageApp.WhatsApp
+                t.contains("messenger") || t.contains("facebook") -> MessageApp.Messenger
+                else -> return@Reply Reply("Okay, I won't send it.")
+            }
+            sendMessage(command.copy(app = picked))
+        }
+        val to = command.to ?: return Reply("Who should I send it to?") { answer ->
+            sendMessage(command.copy(to = CommandParser.normalize(answer).ifBlank { null } ?: return@Reply Reply("Okay, cancelled.")))
+        }
+        val text = command.text ?: return Reply("What should I say?") { answer ->
+            if (answer.isBlank()) Reply("Okay, cancelled.") else sendMessage(command.copy(text = answer.trim()))
+        }
+
+        return when (app) {
+            MessageApp.WhatsApp -> {
+                if (!messaging.whatsAppInstalled()) return Reply("WhatsApp isn't installed.")
+                if (!contacts.allowed) return Reply(Phrases.NEED_CONTACTS)
+                if (!Screens.canOpen(context)) return Reply(Phrases.NEED_OPEN_PERMISSION)
+                val person = contacts.search(to).firstOrNull()?.person
+                    ?: return Reply("I couldn't find $to in your contacts.")
+                confirmThenSend(text, person.name, app) { messaging.sendWhatsApp(person.number, text) }
+            }
+            MessageApp.Messenger -> {
+                if (!messaging.messengerInstalled()) return Reply("Messenger isn't installed.")
+                if (!SiaAccessibilityService.isRunning) return Reply(Phrases.NEED_ACCESSIBILITY)
+                confirmThenSend(text, to, app) { messaging.sendMessenger(to, text) }
+            }
+        }
+    }
+
+    /** Speech recognition can mishear, so Sia always reads the message back before sending. */
+    private fun confirmThenSend(text: String, name: String, app: MessageApp, send: suspend () -> Messaging.Result) =
+        Reply("Send \"$text\" to $name on ${app.spoken}?") { answer ->
+            if (!Answers.isYes(answer)) return@Reply Reply("Okay, I didn't send it.")
+            when (send()) {
+                Messaging.Result.Sent -> Reply("Sent.")
+                Messaging.Result.OpenedOnly -> Reply("I've opened the chat with your message. Tap send.")
+                Messaging.Result.AppMissing -> Reply("${app.spoken} isn't installed.")
+                Messaging.Result.Failed -> Reply("I couldn't send it on ${app.spoken}. Please send it yourself.")
+            }
+        }
+
     // ---------- Phone controls ----------
 
     private fun flashlight(on: Boolean): Reply = when {
@@ -228,6 +314,7 @@ class SiaBrain(private val context: Context) {
     private companion object {
         const val SURE = 0.85
         const val HELP = "You can say things like: open YouTube, call Mom, set an alarm for six thirty, " +
-            "timer for ten minutes, play Believer, next song, flashlight on, volume up, what time is it, or battery."
+            "timer for ten minutes, play Believer, next song, turn on Wi-Fi, " +
+            "send a WhatsApp message to Rafi saying I'm on my way, flashlight on, volume up, what time is it, or battery."
     }
 }

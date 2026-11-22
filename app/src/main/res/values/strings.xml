@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Sia</string>
+    <string name="accessibility_description">Lets Sia do things you ask by voice that apps don\'t allow otherwise: switch Wi-Fi, Bluetooth, mobile data and hotspot in Quick Settings, and press Send in WhatsApp and Messenger. Sia only acts when you give a command, and never reads, records or stores your screen.</string>
 </resources>

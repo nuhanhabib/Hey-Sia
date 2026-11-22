@@ -13,6 +13,9 @@ sealed interface Command {
     /** [query] is null for "play some music". */
     data class PlayMusic(val query: String?, val source: MusicSource) : Command
     data class Media(val action: MediaAction) : Command
+    data class Toggle(val setting: PhoneSetting, val on: Boolean) : Command
+    /** Missing parts ([to], [text], or [app]) are asked for. */
+    data class SendMessage(val app: MessageApp?, val to: String?, val text: String?) : Command
     data object TellTime : Command
     data object TellDate : Command
     data object Battery : Command
@@ -29,3 +32,10 @@ enum class VolumeChange { Up, Down, Max, Mute, Unmute, Set }
 enum class MusicSource { Any, YouTube, Local }
 
 enum class MediaAction { Pause, Resume, Next, Previous }
+
+/** Settings Sia switches from Quick Settings. [spoken] is how she names them. */
+enum class PhoneSetting(val spoken: String) {
+    WiFi("Wi-Fi"), Bluetooth("Bluetooth"), MobileData("Mobile data"), Hotspot("Hotspot"), Airplane("Airplane mode")
+}
+
+enum class MessageApp(val spoken: String) { WhatsApp("WhatsApp"), Messenger("Messenger") }

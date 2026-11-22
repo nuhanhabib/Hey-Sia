@@ -21,6 +21,8 @@ object CommandParser {
             ?: timer(text)
             ?: alarm(text)
             ?: call(text)
+            ?: message(text)
+            ?: toggle(text, words)
             ?: media(text)
             ?: music(text)
             ?: flashlight(text, words)
@@ -76,6 +78,53 @@ object CommandParser {
         val number = NumberWords.digits(target.split(" "))
         if (number != null && number.count { it.isDigit() } >= 3) return Command.CallNumber(number)
         return Command.Call(target)
+    }
+
+    private val settingNames = listOf(
+        "mobile data" to PhoneSetting.MobileData, "data" to PhoneSetting.MobileData,
+        "internet" to PhoneSetting.MobileData, "mobile internet" to PhoneSetting.MobileData,
+        "wifi" to PhoneSetting.WiFi, "wi fi" to PhoneSetting.WiFi, "why fi" to PhoneSetting.WiFi,
+        "bluetooth" to PhoneSetting.Bluetooth, "blue tooth" to PhoneSetting.Bluetooth,
+        "hotspot" to PhoneSetting.Hotspot, "hot spot" to PhoneSetting.Hotspot, "mobile hotspot" to PhoneSetting.Hotspot,
+        "airplane mode" to PhoneSetting.Airplane, "aeroplane mode" to PhoneSetting.Airplane,
+        "flight mode" to PhoneSetting.Airplane, "airplane" to PhoneSetting.Airplane
+    )
+
+    private fun toggle(text: String, words: List<String>): Command? {
+        val setting = settingNames.firstOrNull { (name, _) -> Regex("\\b$name\\b").containsMatchIn(text) }?.second
+            ?: return null
+        val on = when {
+            words.any { it in setOf("off", "disable", "disconnect", "deactivate", "stop") } -> false
+            words.any { it in setOf("on", "enable", "connect", "activate", "start") } -> true
+            else -> return null // "what's my wifi password" etc. is not a toggle
+        }
+        return Command.Toggle(setting, on)
+    }
+
+    private fun message(text: String): Command? {
+        val app = when {
+            Regex("\\b(whatsapp|whats app|what's app|what sapp)\\b").containsMatchIn(text) -> MessageApp.WhatsApp
+            Regex("\\bmessenger\\b").containsMatchIn(text) -> MessageApp.Messenger
+            else -> null
+        }
+        val verbs = if (app != null) "send|write|text|message|tell|whatsapp|whats app" else "send|write|text|message"
+        if (!Regex("^($verbs)\\b").containsMatchIn(text)) return null
+        if (app == null && !Regex("^(send|write) (a |an )?(message|text|sms)|^(message|text) ").containsMatchIn(text)) return null
+
+        var rest = text
+            .replace(Regex("\\b(on |via |using |in |through )?(a )?(whatsapp|whats app|what's app|what sapp|facebook messenger|messenger)( message| text)?\\b"), " ")
+            .replace(Regex("\\s+"), " ").trim()
+        rest = rest.replace(Regex("^(send|write|text|message|tell)( a| an)?( message| text| sms)?( to)?\\b"), "").trim()
+        rest = rest.removePrefix("to ").trim()
+
+        val split = Regex("\\s(saying|that says|that|says|telling|tell (him|her|them)|message|with)\\s").find(" $rest ")
+        val (to, body) = if (split != null) {
+            val padded = " $rest "
+            padded.substring(0, split.range.first).trim() to padded.substring(split.range.last + 1).trim()
+        } else {
+            rest to ""
+        }
+        return Command.SendMessage(app, to.ifBlank { null }, body.ifBlank { null })
     }
 
     private fun media(text: String): Command? {

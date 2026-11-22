@@ -58,6 +58,35 @@ class CommandParserTest {
         assertEquals(Command.Stop, parse("stop"))
     }
 
+    @Test fun togglesSettings() {
+        assertEquals(Command.Toggle(PhoneSetting.WiFi, true), parse("turn on wifi"))
+        assertEquals(Command.Toggle(PhoneSetting.WiFi, false), parse("wi fi off"))
+        assertEquals(Command.Toggle(PhoneSetting.Bluetooth, true), parse("enable bluetooth"))
+        assertEquals(Command.Toggle(PhoneSetting.MobileData, true), parse("turn on data"))
+        assertEquals(Command.Toggle(PhoneSetting.MobileData, false), parse("turn off mobile data"))
+        assertEquals(Command.Toggle(PhoneSetting.Hotspot, true), parse("turn on the hotspot"))
+        assertEquals(Command.Toggle(PhoneSetting.Airplane, true), parse("turn on airplane mode"))
+    }
+
+    @Test fun sendsMessages() {
+        assertEquals(
+            Command.SendMessage(MessageApp.WhatsApp, "rafi", "i'm on my way"),
+            parse("send a whatsapp message to rafi saying i'm on my way")
+        )
+        assertEquals(
+            Command.SendMessage(MessageApp.Messenger, "tanvir", "call me later"),
+            parse("send a message to tanvir on messenger saying call me later")
+        )
+        assertEquals(
+            Command.SendMessage(MessageApp.WhatsApp, "mom", "i will be late"),
+            parse("tell mom on whatsapp that i will be late")
+        )
+        assertEquals(Command.SendMessage(MessageApp.WhatsApp, "rafi", null), parse("send whatsapp to rafi"))
+        assertEquals(Command.SendMessage(null, "rafi", "hello"), parse("send a message to rafi saying hello"))
+        assertEquals(Command.SendMessage(MessageApp.WhatsApp, null, null), parse("send a whatsapp message"))
+        assertEquals(Command.OpenApp("whatsapp"), parse("open whatsapp"))
+    }
+
     @Test fun controlsTheFlashlight() {
         assertEquals(Command.Flashlight(true), parse("turn on the flashlight"))
         assertEquals(Command.Flashlight(false), parse("torch off"))
