@@ -174,8 +174,4 @@ Run the unit tests with:
 
 ## License
 
-Released under the [MIT License](LICENSE). © 2026 Nuhan Habib.
-
----
-
-<p align="center">Made by <a href="https://github.com/nuhanhabib">Nuhan Habib</a></p>
+Released under the [MIT License](LICENSE). © 2026 <a href="https://github.com/nuhanhabib">Nuhan Habib.</a>
