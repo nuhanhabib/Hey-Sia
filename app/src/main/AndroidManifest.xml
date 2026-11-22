@@ -7,6 +7,9 @@
         Permissions are added step by step as features are built.
     -->
 
+    <!-- Step 3 (listening): microphone, so Sia can hear you. Speech is processed on the phone only. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!--
         Step 2 (voice): no permission needed. Android 11+ hides other apps by default,
         so Sia must declare that she looks for a text-to-speech engine to talk through.
