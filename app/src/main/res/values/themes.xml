@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.HeySia" parent="android:Theme.Material.NoActionBar" />
+</resources>

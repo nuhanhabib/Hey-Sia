@@ -1,0 +1,25 @@
+# Gradle / build output
+.gradle/
+build/
+/captures
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large speech models are downloaded, not committed
+app/src/main/assets/model-*/
+
+# Signing keys - never commit these
+*.jks
+*.keystore
