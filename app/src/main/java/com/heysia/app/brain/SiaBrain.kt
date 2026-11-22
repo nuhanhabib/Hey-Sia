@@ -5,6 +5,9 @@ import com.heysia.app.actions.AppLauncher
 import com.heysia.app.actions.Calls
 import com.heysia.app.actions.Contacts
 import com.heysia.app.actions.DeviceControls
+import com.heysia.app.actions.Music
+import com.heysia.app.actions.Network
+import com.heysia.app.actions.Notifier
 import com.heysia.app.actions.Screens
 import com.heysia.app.voice.Phrases
 import java.text.SimpleDateFormat
@@ -19,6 +22,8 @@ class SiaBrain(private val context: Context) {
     private val contacts = Contacts(context)
     private val calls = Calls(context)
     private val device = DeviceControls(context)
+    private val music = Music(context, apps)
+    private val notifier = Notifier(context)
 
     suspend fun handle(text: String): Reply = when (val command = CommandParser.parse(text)) {
         is Command.OpenApp -> openApp(command.name)
@@ -28,6 +33,8 @@ class SiaBrain(private val context: Context) {
         is Command.SetTimer -> setTimer(command.seconds)
         is Command.Flashlight -> flashlight(command.on)
         is Command.Volume -> volume(command)
+        is Command.PlayMusic -> playMusic(command)
+        is Command.Media -> media(command.action)
         Command.TellTime -> Reply("It's ${SimpleDateFormat("h:mm a", Locale.US).format(Date())}.")
         Command.TellDate -> Reply("Today is ${SimpleDateFormat("EEEE, MMMM d", Locale.US).format(Date())}.")
         Command.Battery -> battery()
@@ -113,6 +120,58 @@ class SiaBrain(private val context: Context) {
         else Reply("I couldn't find a clock app to set the timer.")
     }
 
+    // ---------- Music ----------
+
+    private suspend fun playMusic(command: Command.PlayMusic): Reply {
+        if (!Screens.canOpen(context)) return Reply(Phrases.NEED_OPEN_PERMISSION)
+        val query = command.query
+            ?: return if (music.openMusicApp()) Reply("Opening your music.") else Reply("I couldn't find a music app.")
+        val online = Network.isOnline(context)
+
+        return when (command.source) {
+            MusicSource.YouTube -> if (online) youTube(query) else Reply(Phrases.OFFLINE)
+            MusicSource.Local -> local(query, offerYouTube = false)
+            // Online: YouTube, as you asked. Offline: your own songs.
+            MusicSource.Any -> if (online) youTube(query) else local(query, offerYouTube = true)
+        }
+    }
+
+    private fun local(query: String, offerYouTube: Boolean): Reply {
+        if (!music.canReadSongs) return Reply(Phrases.NEED_MUSIC)
+        val song = music.findLocal(query) ?: return notFound(
+            query,
+            if (offerYouTube) "I couldn't find $query on your phone. Say \"turn on data\" and I'll look on YouTube."
+            else "I couldn't find $query on your phone."
+        )
+        return if (music.playLocal(song)) Reply("Playing ${song.title}" + (song.artist?.let { " by $it." } ?: "."))
+        else Reply("I found ${song.title}, but no app could play it.")
+    }
+
+    private suspend fun youTube(query: String): Reply {
+        val app = if (music.youTubeApp()?.contains("vanced") == true) "Vanced" else "YouTube"
+        return when (music.playOnYouTube(query)) {
+            Music.YouTubeResult.Playing -> Reply("Playing $query on $app.")
+            Music.YouTubeResult.ShowingSearch -> Reply("Here are the results for $query on $app.")
+            Music.YouTubeResult.Failed -> notFound(query, "I couldn't open YouTube to find $query.")
+        }
+    }
+
+    /** Says it and leaves a notification, so you know even if you didn't hear her. */
+    private fun notFound(query: String, speech: String): Reply {
+        notifier.show("Song not found", "Sia couldn't find \"$query\".")
+        return Reply(speech)
+    }
+
+    private fun media(action: MediaAction): Reply {
+        when (action) {
+            MediaAction.Pause -> music.pause()
+            MediaAction.Resume -> music.resume()
+            MediaAction.Next -> music.next()
+            MediaAction.Previous -> music.previous()
+        }
+        return Reply("Okay.")
+    }
+
     // ---------- Phone controls ----------
 
     private fun flashlight(on: Boolean): Reply = when {
@@ -169,6 +228,6 @@ class SiaBrain(private val context: Context) {
     private companion object {
         const val SURE = 0.85
         const val HELP = "You can say things like: open YouTube, call Mom, set an alarm for six thirty, " +
-            "timer for ten minutes, flashlight on, volume up, what time is it, or battery."
+            "timer for ten minutes, play Believer, next song, flashlight on, volume up, what time is it, or battery."
     }
 }

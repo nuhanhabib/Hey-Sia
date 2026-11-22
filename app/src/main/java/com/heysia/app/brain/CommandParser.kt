@@ -21,6 +21,8 @@ object CommandParser {
             ?: timer(text)
             ?: alarm(text)
             ?: call(text)
+            ?: media(text)
+            ?: music(text)
             ?: flashlight(text, words)
             ?: volume(text, words)
             ?: open(text)
@@ -74,6 +76,35 @@ object CommandParser {
         val number = NumberWords.digits(target.split(" "))
         if (number != null && number.count { it.isDigit() } >= 3) return Command.CallNumber(number)
         return Command.Call(target)
+    }
+
+    private fun media(text: String): Command? {
+        val action = when {
+            Regex("^(pause|stop)( the)?( music| song| video| playing| it)?$").matches(text) && text != "stop" -> MediaAction.Pause
+            Regex("^(resume|continue|unpause)( the)?( music| song| video| playing)?$|^play$").matches(text) -> MediaAction.Resume
+            Regex("^(next|skip)( song| track| one| this song)?$|^play (the )?next( song)?$").matches(text) -> MediaAction.Next
+            Regex("^(previous|last|go back)( song| track| one)?$|^play (the )?previous( song)?$").matches(text) -> MediaAction.Previous
+            else -> return null
+        }
+        return Command.Media(action)
+    }
+
+    private fun music(text: String): Command? {
+        val m = Regex("^(play|put on|listen to|i want to listen to)\\b(.*)").find(text) ?: return null
+        var query = m.groupValues[2].trim()
+        var source = MusicSource.Any
+        Regex("\\s*\\b(on|in|from|using) (youtube|you tube|vanced|you tube vanced|youtube vanced)$").find(query)?.let {
+            source = MusicSource.YouTube
+            query = query.removeRange(it.range).trim()
+        }
+        Regex("\\s*\\b(from my phone|from my songs|from my music|on my phone|offline|locally|from phone)$").find(query)?.let {
+            source = MusicSource.Local
+            query = query.removeRange(it.range).trim()
+        }
+        query = query.removePrefix("the song ").removePrefix("song ").removePrefix("a song ").removePrefix("songs by ")
+            .removePrefix("music by ").removePrefix("some songs by ").trim()
+        val generic = setOf("", "music", "some music", "a song", "songs", "some songs", "my music", "my songs", "something")
+        return Command.PlayMusic(query.takeUnless { it in generic }, source)
     }
 
     private fun flashlight(text: String, words: List<String>): Command? {

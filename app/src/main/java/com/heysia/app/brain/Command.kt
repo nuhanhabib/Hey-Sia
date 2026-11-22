@@ -10,6 +10,9 @@ sealed interface Command {
     data class SetTimer(val seconds: Int?) : Command
     data class Flashlight(val on: Boolean) : Command
     data class Volume(val change: VolumeChange, val percent: Int? = null) : Command
+    /** [query] is null for "play some music". */
+    data class PlayMusic(val query: String?, val source: MusicSource) : Command
+    data class Media(val action: MediaAction) : Command
     data object TellTime : Command
     data object TellDate : Command
     data object Battery : Command
@@ -21,3 +24,8 @@ sealed interface Command {
 }
 
 enum class VolumeChange { Up, Down, Max, Mute, Unmute, Set }
+
+/** Where to look for a song. [Any]: YouTube when online, your own songs when offline. */
+enum class MusicSource { Any, YouTube, Local }
+
+enum class MediaAction { Pause, Resume, Next, Previous }

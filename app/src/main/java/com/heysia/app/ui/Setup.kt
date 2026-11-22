@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.heysia.app.actions.Music
 
 /**
  * One thing Sia needs you to allow. Each item says exactly why it's needed.
@@ -76,6 +77,15 @@ object Setup {
                 required = false,
                 permissions = listOf(Manifest.permission.CALL_PHONE),
                 isDone = { granted(it, Manifest.permission.CALL_PHONE) }
+            )
+        )
+        add(
+            SetupItem(
+                title = "Music files",
+                why = "To find and play songs saved on your phone when you're offline. Audio files only: no photos, videos or documents.",
+                required = false,
+                permissions = listOf(Music.audioPermission),
+                isDone = { granted(it, Music.audioPermission) }
             )
         )
         add(

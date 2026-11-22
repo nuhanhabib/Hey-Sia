@@ -40,6 +40,24 @@ class CommandParserTest {
         assertEquals(Command.SetTimer(null), parse("set a timer"))
     }
 
+    @Test fun playsMusic() {
+        assertEquals(Command.PlayMusic("believer", MusicSource.Any), parse("play believer"))
+        assertEquals(Command.PlayMusic("shape of you", MusicSource.YouTube), parse("play shape of you on youtube"))
+        assertEquals(Command.PlayMusic("tum hi ho", MusicSource.Local), parse("play the song tum hi ho from my phone"))
+        assertEquals(Command.PlayMusic("arijit singh", MusicSource.Any), parse("play songs by arijit singh"))
+        assertEquals(Command.PlayMusic(null, MusicSource.Any), parse("play some music"))
+        assertEquals(Command.PlayMusic("believer", MusicSource.YouTube), parse("i want to listen to believer on vanced"))
+    }
+
+    @Test fun controlsPlayback() {
+        assertEquals(Command.Media(MediaAction.Pause), parse("pause the music"))
+        assertEquals(Command.Media(MediaAction.Pause), parse("stop the song"))
+        assertEquals(Command.Media(MediaAction.Resume), parse("resume"))
+        assertEquals(Command.Media(MediaAction.Next), parse("next song"))
+        assertEquals(Command.Media(MediaAction.Previous), parse("previous track"))
+        assertEquals(Command.Stop, parse("stop"))
+    }
+
     @Test fun controlsTheFlashlight() {
         assertEquals(Command.Flashlight(true), parse("turn on the flashlight"))
         assertEquals(Command.Flashlight(false), parse("torch off"))

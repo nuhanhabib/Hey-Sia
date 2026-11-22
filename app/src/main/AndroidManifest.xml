@@ -27,6 +27,16 @@
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!--
+        Step 6 (music):
+        - music files: find songs saved on the phone (audio only, never photos/videos/documents)
+        - internet + network state: find songs on YouTube, only when you're already online
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- A phone without a SIM (or a tablet) can still install Sia. -->
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
@@ -49,6 +59,14 @@
         <intent>
             <action android:name="android.intent.action.SET_ALARM" />
         </intent>
+        <!-- Step 6: find a music app and the YouTube apps. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="audio/*" />
+        </intent>
+        <package android:name="app.revanced.android.youtube" />
+        <package android:name="com.vanced.android.youtube" />
+        <package android:name="com.google.android.youtube" />
     </queries>
 
     <application

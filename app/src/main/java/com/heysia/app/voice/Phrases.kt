@@ -11,6 +11,7 @@ object Phrases {
     const val SOMETHING_WRONG = "Sorry, something went wrong."
     const val TRY_HELP = "Say \"what can you do\" to hear examples."
     const val NEED_OPEN_PERMISSION = "I need permission to open apps. Please open Sia and allow \"Open apps\"."
+    const val NEED_MUSIC = "I need access to your music files to play your songs. Please open Sia and allow it."
     const val NEED_CONTACTS = "I need access to your contacts to call people by name. Please open Sia and allow it."
 
     fun youSaid(text: String) = "You said: $text"
