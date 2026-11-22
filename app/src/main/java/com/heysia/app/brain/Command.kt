@@ -16,6 +16,7 @@ sealed interface Command {
     data class Toggle(val setting: PhoneSetting, val on: Boolean) : Command
     /** Missing parts ([to], [text], or [app]) are asked for. */
     data class SendMessage(val app: MessageApp?, val to: String?, val text: String?) : Command
+    data object ReadNotifications : Command
     data object TellTime : Command
     data object TellDate : Command
     data object Battery : Command

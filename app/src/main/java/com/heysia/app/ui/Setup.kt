@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import android.content.ComponentName
 import com.heysia.app.a11y.SiaAccessibilityService
@@ -72,6 +73,16 @@ object Setup {
                 required = false,
                 settingsScreen = { Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) },
                 isDone = { context -> enabledInSettings(context, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, SiaAccessibilityService::class.java) }
+            )
+        )
+        add(
+            SetupItem(
+                title = "Notification access",
+                why = "To read your notifications aloud when you ask. Private apps and one-time codes are always skipped, " +
+                    "and nothing is saved. (If Android says \"Restricted setting\", allow it from Sia's App info ⋮ menu.)",
+                required = false,
+                settingsScreen = { Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) },
+                isDone = { NotificationManagerCompat.getEnabledListenerPackages(it).contains(it.packageName) }
             )
         )
         add(

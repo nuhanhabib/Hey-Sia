@@ -15,6 +15,7 @@ import com.heysia.app.actions.Music
 import com.heysia.app.actions.Network
 import com.heysia.app.actions.Notifier
 import com.heysia.app.actions.Screens
+import com.heysia.app.notify.SiaNotificationListener
 import com.heysia.app.voice.Phrases
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -44,6 +45,7 @@ class SiaBrain(private val context: Context) {
         is Command.Media -> media(command.action)
         is Command.Toggle -> toggle(command.setting, command.on)
         is Command.SendMessage -> sendMessage(command)
+        Command.ReadNotifications -> readNotifications()
         Command.TellTime -> Reply("It's ${SimpleDateFormat("h:mm a", Locale.US).format(Date())}.")
         Command.TellDate -> Reply("Today is ${SimpleDateFormat("EEEE, MMMM d", Locale.US).format(Date())}.")
         Command.Battery -> battery()
@@ -258,6 +260,30 @@ class SiaBrain(private val context: Context) {
             }
         }
 
+    // ---------- Notifications ----------
+
+    private fun readNotifications(): Reply {
+        val listener = SiaNotificationListener.instance ?: return Reply(Phrases.NEED_NOTIFICATION_ACCESS)
+        val items = listener.readable()
+        if (items.isEmpty()) return Reply("You have no new notifications.")
+        val intro = if (items.size == 1) "You have one notification. " else "You have ${items.size} notifications. "
+        return readBatch(items, 0, intro)
+    }
+
+    /** Reads [NOTIFICATIONS_PER_TURN] at a time, then offers to continue. */
+    private fun readBatch(items: List<SiaNotificationListener.Item>, from: Int, intro: String = ""): Reply {
+        val batch = items.drop(from).take(NOTIFICATIONS_PER_TURN)
+        val spoken = batch.joinToString(" ") { item ->
+            val who = if (item.title.isNotEmpty() && item.title != item.app) "${item.app}, ${item.title}" else item.app
+            "From $who: ${item.text.ifEmpty { "new notification" }}."
+        }
+        val next = from + batch.size
+        if (next >= items.size) return Reply(intro + spoken)
+        return Reply("$intro$spoken Shall I read more?") { answer ->
+            if (Answers.isYes(answer)) readBatch(items, next) else Reply("Okay.")
+        }
+    }
+
     // ---------- Phone controls ----------
 
     private fun flashlight(on: Boolean): Reply = when {
@@ -313,8 +339,9 @@ class SiaBrain(private val context: Context) {
 
     private companion object {
         const val SURE = 0.85
+        const val NOTIFICATIONS_PER_TURN = 5
         const val HELP = "You can say things like: open YouTube, call Mom, set an alarm for six thirty, " +
             "timer for ten minutes, play Believer, next song, turn on Wi-Fi, " +
-            "send a WhatsApp message to Rafi saying I'm on my way, flashlight on, volume up, what time is it, or battery."
+            "send a WhatsApp message to Rafi saying I'm on my way, read my notifications, flashlight on, volume up, what time is it, or battery."
     }
 }

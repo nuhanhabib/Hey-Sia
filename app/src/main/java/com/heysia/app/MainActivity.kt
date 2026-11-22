@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.edit
 import com.heysia.app.service.SiaService
 import com.heysia.app.ui.HomeScreen
+import com.heysia.app.ui.PrivateAppsScreen
 import com.heysia.app.ui.Setup
 import com.heysia.app.ui.VoiceTestScreen
 import com.heysia.app.voice.SiaVoice
@@ -48,9 +49,11 @@ class MainActivity : ComponentActivity() {
                             openScreen = ::openSafely,
                             extraButtons = {
                                 OutlinedButton(onClick = { page = Page.Voice }) { Text("Voice settings") }
+                                OutlinedButton(onClick = { page = Page.PrivateApps }) { Text("Private apps") }
                             }
                         )
                         Page.Voice -> VoiceTestScreen(voice = voice(), openScreen = ::openSafely, onRetry = ::recreate)
+                        Page.PrivateApps -> PrivateAppsScreen()
                     }
                 }
             }
@@ -87,7 +90,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private enum class Page { Home, Voice }
+    private enum class Page { Home, Voice, PrivateApps }
 
     companion object {
         private const val PREFS = "sia_settings"

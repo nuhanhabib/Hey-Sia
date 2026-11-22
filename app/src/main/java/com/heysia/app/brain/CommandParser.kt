@@ -21,6 +21,7 @@ object CommandParser {
             ?: timer(text)
             ?: alarm(text)
             ?: call(text)
+            ?: notifications(text)
             ?: message(text)
             ?: toggle(text, words)
             ?: media(text)
@@ -100,6 +101,11 @@ object CommandParser {
         }
         return Command.Toggle(setting, on)
     }
+
+    private fun notifications(text: String): Command? =
+        if (Regex("\\bnotifications?\\b").containsMatchIn(text) ||
+            Regex("^(do i have|have i got|any) (any )?(new )?messages").containsMatchIn(text)
+        ) Command.ReadNotifications else null
 
     private fun message(text: String): Command? {
         val app = when {

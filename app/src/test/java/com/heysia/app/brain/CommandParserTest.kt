@@ -87,6 +87,12 @@ class CommandParserTest {
         assertEquals(Command.OpenApp("whatsapp"), parse("open whatsapp"))
     }
 
+    @Test fun readsNotifications() {
+        assertEquals(Command.ReadNotifications, parse("read my notifications"))
+        assertEquals(Command.ReadNotifications, parse("any new notifications"))
+        assertEquals(Command.ReadNotifications, parse("do i have any messages"))
+    }
+
     @Test fun controlsTheFlashlight() {
         assertEquals(Command.Flashlight(true), parse("turn on the flashlight"))
         assertEquals(Command.Flashlight(false), parse("torch off"))

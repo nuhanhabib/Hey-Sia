@@ -93,6 +93,17 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
 
+        <!-- Step 8: reads notifications aloud when you ask (skips private apps and one-time codes). -->
+        <service
+            android:name=".notify.SiaNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Step 7: taps switches and Send buttons for you, only when you give a command. -->
         <service
             android:name=".a11y.SiaAccessibilityService"
